@@ -22,8 +22,8 @@ model User {
 model product{
   id Int @id @default(autoincrement())
   p_name String @unique
-  price String?
-  type String?
+  price Decimal @db.Decimal(10, 2)
+  type String
   intro String?
-  
+  img String?
 }
