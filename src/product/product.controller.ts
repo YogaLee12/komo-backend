@@ -3,7 +3,7 @@ import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { product } from '@prisma/client';
 
-@Controller('products')
+@Controller('product')
 export class ProductController {
     constructor(private productService: ProductService) {}
 
