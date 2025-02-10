@@ -16,7 +16,7 @@ datasource db {
 model User {
   id    Int     @id @default(autoincrement())
   user_name String  @unique
-  pwd  String?
+  pwd  String
 }
 
 model product{

@@ -1,14 +1,14 @@
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { product } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { updataProductDto } from './dto/update-product.dto';
+import { addProductsDto } from './dto/add-product.dto';
 
 @Injectable()
 export class ProductService {
     constructor(private prisma: PrismaService) {}
-
-
 
     // Get all products
     async getProducts(): Promise<product[]> {
@@ -21,55 +21,40 @@ export class ProductService {
             where:{p_name},
         });
     }
+    // find one product
+    async findOne(id:number){
+        const product = await this.prisma.product.findUnique({where:{id}});
+        if (!product){
+            throw new NotFoundException('product with ID ${id} not found')
+        }
+        return product
+    }
 
     //add new product
-    async addProducts(
-        data:{
-            p_name:string;
-            price: Decimal;
-            type: string;
-            intro: string;
-            img:string | null;
-        }
-    ): Promise<product | null>{
-        const productData = {
-            p_name: data.p_name,
-            price: data.price.toString(),
-            type: data.type,
-            intro: data.intro,
-            img: data.img
-        }
+    async addProducts(addProductsDto:addProductsDto){
         return this.prisma.product.create({
-            data: productData,
-        });
+            data:{
+                p_name: addProductsDto.p_name,
+                price: new Decimal(addProductsDto.price),  
+                type: addProductsDto.type,
+                intro: addProductsDto.intro || null,
+                img: addProductsDto.img || null,  
+            },
+                                        });
     }
 
     //update product infor
-    async updateProduct(
-        id: number,
-        data:{
-            p_name:string;
-            price: Decimal;
-            type: string;
-            intro: string;
-            img:string | null;
-        }
-    ): Promise<product>{
-        const productData = {
-            p_name: data.p_name,
-            price: data.price.toString(),
-            type: data.type,
-            intro: data.intro,
-            img: data.img
-        }
+    async updateProduct(id:number, updataProductDto:updataProductDto){
+        await this.findOne(id); // make sure the product is exist
         return this.prisma.product.update({
             where:{id},
-            data: productData,
-        });
+            data: updataProductDto,
+        })
     }
 
     // delete product
     async deleteProduct(id:number) : Promise<product>{
+        await this.findOne(id); // make sure the product is exist
         return this.prisma.product.delete({
             where:{id}
         });
