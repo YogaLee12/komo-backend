@@ -3,7 +3,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { product } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { updataProductDto } from './dto/update-product.dto';
+import { updateProductDto } from './dto/update-product.dto';
 import { addProductsDto } from './dto/add-product.dto';
 
 @Injectable()
@@ -44,11 +44,22 @@ export class ProductService {
     }
 
     //update product infor
-    async updateProduct(id:number, updataProductDto:updataProductDto){
+    async updateProduct(id:number, updateProductDto:updateProductDto, file? : Express.Multer.File){
         await this.findOne(id); // make sure the product is exist
+        const existingProduct = await this.prisma.product.findUnique({ where: { id } });
+            if (!existingProduct) {
+                throw new Error(`Product with ID ${id} not found`);
+            }
+
         return this.prisma.product.update({
             where:{id},
-            data: updataProductDto,
+            data: {
+                p_name: updateProductDto.p_name ?? existingProduct.p_name,
+                price: updateProductDto.price !== undefined ? new Decimal(updateProductDto.price) : existingProduct.price,
+                type: updateProductDto.type ?? existingProduct.type,
+                intro: updateProductDto.intro ?? existingProduct.intro,
+                img: file ? file.filename : existingProduct.img,
+            }
         })
     }
 

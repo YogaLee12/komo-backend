@@ -4,7 +4,7 @@ import { ProductService } from './product.service';
 import { product } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { addProductsDto } from './dto/add-product.dto';
-import { updataProductDto } from './dto/update-product.dto';
+import { updateProductDto } from './dto/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -54,6 +54,7 @@ export class ProductController {
     async addProduct(
         @Body() addProductsDto: addProductsDto,
         @UploadedFile() image: Express.Multer.File
+        
     ) {
         if (image){
             addProductsDto.img = image.filename;
@@ -64,14 +65,31 @@ export class ProductController {
     // update product information
     @Put(':id')
     @ApiOperation( {summary:'update product information.'} )
-    updateProduct(@Param('id') id: string, @Body() updateProductDto: updataProductDto) {
-        return this.productService.updateProduct(Number(id), updateProductDto);
+    @UseInterceptors(
+        FileInterceptor('img', {
+            storage: multer.diskStorage({
+                destination: './productImg', // 存储路径
+                filename: (req, file, callback) => {
+                    const fileExt = path.extname(file.originalname); // 获取文件扩展名
+                    const newFileName = `${req.body.p_name}${fileExt}`; // 重命名为 p_name.xxx
+                    callback(null, newFileName);
+                },
+            }),
+        }),
+    )
+    async updateProduct(
+        @Param('id') id: string, 
+        @Body() updateProductDto: updateProductDto,
+        @UploadedFile() file? : Express.Multer.File
+    ) {
+        return this.productService.updateProduct(Number(id), updateProductDto,file);
     }
 
     // delete product
     @Delete(':id')
     @ApiOperation( {summary:'product delete.'} )
-    deleteProduct(@Param('id') id: string){
+    
+    async deleteProduct(@Param('id') id: string){
         return this.productService.deleteProduct(Number(id))
     }
 
