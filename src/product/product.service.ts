@@ -5,6 +5,8 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { updateProductDto } from './dto/update-product.dto';
 import { addProductsDto } from './dto/add-product.dto';
+import * as path from 'path';
+import { unlink } from 'fs/promises';
 
 @Injectable()
 export class ProductService {
@@ -45,7 +47,7 @@ export class ProductService {
 
     //update product infor
     async updateProduct(id:number, updateProductDto:updateProductDto, file? : Express.Multer.File){
-        await this.findOne(id); // make sure the product is exist
+        
         const existingProduct = await this.prisma.product.findUnique({ where: { id } });
             if (!existingProduct) {
                 throw new Error(`Product with ID ${id} not found`);
@@ -65,7 +67,22 @@ export class ProductService {
 
     // delete product
     async deleteProduct(id:number) : Promise<product>{
-        await this.findOne(id); // make sure the product is exist
+        // 查找产品，确保它存在
+            const existingProduct = await this.prisma.product.findUnique({ where: { id } });
+            if (!existingProduct) {
+                throw new Error(`Product with ID ${id} not found`);
+            }
+
+            // 删除图片文件（如果存在）
+            if (existingProduct.img) {
+                const imagePath = path.join(__dirname, '../../productImg', existingProduct.img);
+                try {
+                    await unlink(imagePath);
+                    console.log(`Deleted image: ${imagePath}`);
+                } catch (error) {
+                    console.error(`Failed to delete image: ${imagePath}`, error);
+                }
+            }
         return this.prisma.product.delete({
             where:{id}
         });
